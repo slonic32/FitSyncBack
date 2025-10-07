@@ -51,7 +51,7 @@ export default userRouter;
 
 /**
  * @swagger
- * /api/register:
+ * /api/users/register:
  *   post:
  *     summary: Registering a user
  *     description: Public route to register a user
@@ -93,7 +93,7 @@ export default userRouter;
  *       '500':
  *         description: Unexpected Server Error.
  *
- * /api/login:
+ * /api/users/login:
  *   post:
  *     summary: User Login Route
  *     description: Public route for user login
@@ -130,7 +130,7 @@ export default userRouter;
  *       '401':
  *         description: Not Authorized
  *
- * /api/logout:
+ * /api/users/logout:
  *   get:
  *     summary: Log Out Current User
  *     description: Private route to logout current user
@@ -143,7 +143,7 @@ export default userRouter;
  *         type: string
  *         example: Bearer abcde_12345
  *
- * /api/current:
+ * /api/users/current:
  *   get:
  *     summary: Current User Information
  *     description: Private route which returns current user information
@@ -169,7 +169,7 @@ export default userRouter;
  *         description: Not Authorized
 
  *
- * /api/update:
+ * /api/users/update:
  *   patch:
  *     summary: Update User Settings
  *     description: Private route to update user settings
@@ -199,7 +199,7 @@ export default userRouter;
  *         description: Not Authorized or User not Found
  *
  *
- * /api/refresh:
+ * /api/users/refresh:
  *   patch:
  *     summary: Regenerate Authentication Tokens
  *     description: Private route to re-generate authentication and refresh tokens

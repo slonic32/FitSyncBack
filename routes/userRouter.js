@@ -51,7 +51,7 @@ export default userRouter;
 
 /**
  * @swagger
- * /api//register:
+ * /api/register:
  *   post:
  *     summary: Registering a user
  *     description: Public route to register a user

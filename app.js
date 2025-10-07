@@ -55,7 +55,7 @@ app.use((err, req, res, next) => {
 });
 
 // set port to listen
-const port = +process.env.PORT || 3000;
+const port = +process.env.PORT || 3033;
 
 // start server
 app.listen(port, () => {

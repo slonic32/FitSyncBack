@@ -28,6 +28,12 @@ export const authenticate = async (req, res, next) => {
 // check user by refresh token
 export const authenticateRefresh = async (req, res, next) => {
   try {
+    if (!req.body || !req.body.refreshToken) {
+      res.status(401).json({
+        message: "Unauthorized",
+      });
+    }
+
     const { refreshToken } = req.body;
 
     // find user by token

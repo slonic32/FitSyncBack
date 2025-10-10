@@ -1,7 +1,7 @@
 import { model, Schema } from "mongoose";
 
 const emailRegexp = /^\S+@\S+\.\S+$/;
-const genderEnum = ["woman", "man"];
+const genderEnum = ["female", "male"];
 
 const userSchema = new Schema(
   {
@@ -21,7 +21,7 @@ const userSchema = new Schema(
     gender: {
       type: String,
       enum: genderEnum,
-      default: "woman",
+      default: "female",
     },
     weight: {
       type: Number,

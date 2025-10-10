@@ -4,12 +4,12 @@ import {
   regenerateTokenDataService,
   registerDataService,
   safeUserCloneDataService,
-  updateUserUserDataService,
+  updateUserDataService,
 } from "../services/userServices.js";
 
 export const register = async (req, res) => {
   const { email, name, password } = req.body;
-  const newUser = await registerDataService(email, name, password);
+  const newUser = await registerDataService(email.trim(), name, password);
 
   newUser.toObject();
   res.status(201).json({
@@ -44,7 +44,7 @@ function removeEmptyProps(obj) {
     if (
       value !== undefined &&
       value !== null &&
-      value !== "" &&
+      !(typeof value === "string" && value.trim() === "") &&
       !(Array.isArray(value) && value.length === 0)
     ) {
       acc[key] = value;

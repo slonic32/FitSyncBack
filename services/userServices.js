@@ -35,8 +35,16 @@ export const logoutUserDataService = async currentUser => {
   );
 };
 
-export const updateUserUserDataService = async (currentUser, params) => {
+export const updateUserDataService = async (currentUser, params) => {
   if (!currentUser) throw HttpError(401, "User not found");
+  if (params.email) {
+    params.email = params.email.trim();
+    if (currentUser.email !== params.email) {
+      if ((await User.findOne({ email: currentUser.email })) !== null) {
+        throw HttpError(409, "Email in use");
+      }
+    }
+  }
   try {
     return await User.findByIdAndUpdate(currentUser._id, params, { new: true });
   } catch (error) {

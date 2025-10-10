@@ -1,6 +1,6 @@
 import Joi from "joi";
 
-const genderEnum = ["woman", "man"];
+const genderEnum = ["female", "male"];
 
 const registerSchema = Joi.object({
   email: Joi.string().trim().email().required(),
@@ -19,7 +19,7 @@ const refreshSchema = Joi.object({
 
 const updateUserSchema = Joi.object({
   name: Joi.string(),
-  email: Joi.string().trim().email().required(),
+  email: Joi.string().trim().email(),
   gender: Joi.string().valid(...genderEnum),
   weight: Joi.number(),
   dailyActivityTime: Joi.string(),

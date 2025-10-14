@@ -45,7 +45,7 @@ export const updateUserDataService = async (currentUser, params) => {
     params.email = params.email.toLowerCase();
     params.email = params.email.trim();
     if (currentUser.email !== params.email) {
-      if ((await User.findOne({ email: currentUser.email })) !== null) {
+      if ((await User.findOne({ email: params.email })) !== null) {
         throw HttpError(409, "Email in use");
       }
     }

@@ -1,3 +1,4 @@
+import { resizeImg } from "../services/imgServices.js";
 import {
   loginDataService,
   logoutUserDataService,
@@ -54,14 +55,27 @@ function removeEmptyProps(obj) {
 }
 
 export const updateUser = async (req, res) => {
-  let editedUser = {};
   const user = req.user;
+  let editedUser = user;
   const dirtyData = req.body;
-  const clearData = removeEmptyProps(dirtyData);
+  if (dirtyData) {
+    if (dirtyData.avatarURL?.trim() === "false") {
+      dirtyData.avatarURL = "";
+    }
+    const clearData = removeEmptyProps(dirtyData);
 
-  editedUser = await updateUserDataService(user, {
-    ...clearData,
-  });
+    if (req.file) {
+      const avatarURL = await resizeImg(req.file);
+      editedUser = await updateUserDataService(user, {
+        ...clearData,
+        avatarURL,
+      });
+    } else {
+      editedUser = await updateUserDataService(user, {
+        ...clearData,
+      });
+    }
+  }
 
   res.status(200).json({ user: safeUserCloneDataService(editedUser) });
 };

@@ -5,6 +5,8 @@ import HttpError from "../helpers/HttpError.js";
 import { generateTokens } from "./jwtServices.js";
 
 export const registerDataService = async (email, name, password) => {
+  email = email.toLowerCase();
+  email = email.trim();
   if ((await User.findOne({ email })) !== null) {
     throw HttpError(409, "Email in use");
   }
@@ -19,6 +21,8 @@ export const registerDataService = async (email, name, password) => {
 };
 
 export const loginDataService = async (email, password) => {
+  email = email.toLowerCase();
+  email = email.trim();
   const foundUser = await User.findOne({ email });
   if (!foundUser) throw HttpError(401, "Email or password is wrong");
 
@@ -38,6 +42,7 @@ export const logoutUserDataService = async currentUser => {
 export const updateUserDataService = async (currentUser, params) => {
   if (!currentUser) throw HttpError(401, "User not found");
   if (params.email) {
+    params.email = params.email.toLowerCase();
     params.email = params.email.trim();
     if (currentUser.email !== params.email) {
       if ((await User.findOne({ email: currentUser.email })) !== null) {

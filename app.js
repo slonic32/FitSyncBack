@@ -8,6 +8,9 @@ import userRouter from "./routes/userRouter.js";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./helpers/swagger.js";
 
+import HttpError from "./helpers/HttpError.js";
+import { globalErrorHandler } from "./helpers/globalErrorHandler.js";
+
 // read environment variables
 dotenv.config();
 
@@ -44,8 +47,8 @@ app.use(`${pathPrefix}/docs`, swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(`${pathPrefix}/users`, userRouter);
 
 // not found response
-app.use((_, res) => {
-  res.status(404).json({ message: "Route not found" });
+app.use((_, res, next) => {
+  next(HttpError(404, "Route not found"));
 });
 
 // internal error response
@@ -55,7 +58,9 @@ app.use((err, req, res, next) => {
 });
 
 // set port to listen
-const port = +process.env.PORT || 3033;
+const port = +process.env.PORT || 3032;
+
+app.use(globalErrorHandler);
 
 // start server
 app.listen(port, () => {

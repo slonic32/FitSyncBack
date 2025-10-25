@@ -11,6 +11,7 @@ import { swaggerSpec } from "./helpers/swagger.js";
 import HttpError from "./helpers/HttpError.js";
 import { globalErrorHandler } from "./helpers/globalErrorHandler.js";
 
+import waterRouter from "./routes/waterRouter.js";
 // read environment variables
 dotenv.config();
 
@@ -45,6 +46,9 @@ app.use(`${pathPrefix}/docs`, swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // path for user management
 app.use(`${pathPrefix}/users`, userRouter);
+
+// path for water tracking
+app.use(`${pathPrefix}/water`, waterRouter);
 
 // not found response
 app.use((_, res, next) => {

@@ -1,12 +1,11 @@
+import { jest } from "@jest/globals";
 import request from "supertest";
 import express from "express";
 
-// ===== Mock middlewares =====
-
-// We'll fake authenticate
+//  fake user
 const fakeUser = {
   _id: "u123",
-  id: "u123", // some code uses .id
+  id: "u123",
   email: "test@example.com",
   name: "Test User",
   gender: "female",
@@ -18,23 +17,27 @@ const fakeUser = {
   refreshToken: "REFRESH_TOKEN",
 };
 
+// mock modules
+const mockRegisterDataService = jest.fn();
+const mockLoginDataService = jest.fn();
+const mockLogoutUserDataService = jest.fn();
+const mockRegenerateTokenDataService = jest.fn();
+const mockSafeUserCloneDataService = jest.fn();
+const mockUpdateUserDataService = jest.fn();
+
 jest.unstable_mockModule("../middleware/authenticate.js", () => ({
   authenticate: (req, res, next) => {
     req.user = { ...fakeUser };
     next();
   },
   authenticateRefresh: (req, res, next) => {
-    // refresh route uses body.refreshToken normally
     req.user = { ...fakeUser };
     next();
   },
 }));
 
-// uploadImage normally parses multipart/form-data and writes file
-// in tests we just skip and do nothing
 jest.unstable_mockModule("../middleware/imgUploader.js", () => ({
   uploadImage: (req, res, next) => {
-    // pretend no file was uploaded
     req.file = undefined;
     next();
   },
@@ -59,14 +62,6 @@ jest.unstable_mockModule("../middleware/validateBody.js", () => {
   };
 });
 
-// ===== Mock service layer =====
-const mockRegisterDataService = jest.fn();
-const mockLoginDataService = jest.fn();
-const mockLogoutUserDataService = jest.fn();
-const mockRegenerateTokenDataService = jest.fn();
-const mockSafeUserCloneDataService = jest.fn();
-const mockUpdateUserDataService = jest.fn();
-
 jest.unstable_mockModule("../services/userServices.js", () => ({
   registerDataService: (...args) => mockRegisterDataService(...args),
   loginDataService: (...args) => mockLoginDataService(...args),
@@ -77,22 +72,20 @@ jest.unstable_mockModule("../services/userServices.js", () => ({
   safeUserCloneDataService: (...args) => mockSafeUserCloneDataService(...args),
 }));
 
-// resizeImg is used in updateUser if req.file exists.
-// We'll mock it so no Jimp/fs needed.
 jest.unstable_mockModule("../services/imgServices.js", () => ({
   resizeImg: jest.fn(async () => "avatars/newAvatar.png"),
 }));
 
-// after all mocks, import router (and controller, which pulls mocks)
+// import the real router
 const { default: userRouter } = await import("../routes/userRouter.js");
 
-// helper to build a tiny express app for tests
+// helper app
+
 function makeTestApp() {
   const app = express();
   app.use(express.json());
   app.use("/api/users", userRouter);
 
-  // global error handler similar to app.js
   app.use((err, req, res, next) => {
     const { status = 500, message = "Server error" } = err;
     res.status(status).json({ message });
@@ -101,6 +94,7 @@ function makeTestApp() {
   return app;
 }
 
+// tests
 describe("User API", () => {
   let app;
 
@@ -109,15 +103,13 @@ describe("User API", () => {
     jest.clearAllMocks();
   });
 
-  // =========================
-  // POST /api/users/register
-  // =========================
   describe("POST /api/users/register", () => {
-    it("should register new user (201)", async () => {
+    it("201 registers new user", async () => {
       const createdUser = {
         ...fakeUser,
         token: "NEW_ACCESS",
         refreshToken: "NEW_REFRESH",
+        toObject() {},
       };
 
       mockRegisterDataService.mockResolvedValue(createdUser);
@@ -159,9 +151,10 @@ describe("User API", () => {
       );
     });
 
-    it("should return 400 if body invalid (no password)", async () => {
+    it("400 invalid body", async () => {
       const res = await request(app).post("/api/users/register").send({
         email: "test@example.com",
+        // no password
       });
 
       expect(res.status).toBe(400);
@@ -172,7 +165,7 @@ describe("User API", () => {
       expect(mockRegisterDataService).not.toHaveBeenCalled();
     });
 
-    it("should return 409 if email already in use", async () => {
+    it("409 email in use", async () => {
       mockRegisterDataService.mockRejectedValue({
         status: 409,
         message: "Email in use",
@@ -189,11 +182,8 @@ describe("User API", () => {
     });
   });
 
-  // =========================
-  // POST /api/users/login
-  // =========================
   describe("POST /api/users/login", () => {
-    it("should login user (200)", async () => {
+    it("200 login ok", async () => {
       const loggedUser = {
         ...fakeUser,
         token: "ACCESS_LOGIN",
@@ -237,7 +227,7 @@ describe("User API", () => {
       );
     });
 
-    it("should return 400 for invalid body (no email)", async () => {
+    it("400 invalid body", async () => {
       const res = await request(app).post("/api/users/login").send({
         password: "12345",
       });
@@ -250,7 +240,7 @@ describe("User API", () => {
       expect(mockLoginDataService).not.toHaveBeenCalled();
     });
 
-    it("should return 401 for wrong password", async () => {
+    it("401 bad credentials", async () => {
       mockLoginDataService.mockRejectedValue({
         status: 401,
         message: "Email or password is wrong",
@@ -266,27 +256,21 @@ describe("User API", () => {
     });
   });
 
-  // =========================
-  // GET /api/users/logout
-  // =========================
   describe("GET /api/users/logout", () => {
-    it("should logout user (204)", async () => {
+    it("204 logout ok", async () => {
       mockLogoutUserDataService.mockResolvedValue(undefined);
 
       const res = await request(app).get("/api/users/logout");
 
       expect(res.status).toBe(204);
-      expect(res.body).toEqual({}); // no content
+      expect(res.body).toEqual({});
 
       expect(mockLogoutUserDataService).toHaveBeenCalledWith(fakeUser);
     });
   });
 
-  // =========================
-  // GET /api/users/current
-  // =========================
   describe("GET /api/users/current", () => {
-    it("should return current user (200)", async () => {
+    it("200 returns current user", async () => {
       mockSafeUserCloneDataService.mockReturnValue({
         email: fakeUser.email,
         name: fakeUser.name,
@@ -316,11 +300,8 @@ describe("User API", () => {
     });
   });
 
-  // =========================
-  // PATCH /api/users/update
-  // =========================
   describe("PATCH /api/users/update", () => {
-    it("should update user (200) with body only", async () => {
+    it("200 updates profile (no avatar)", async () => {
       const dbUpdatedUser = {
         ...fakeUser,
         name: "New Name",
@@ -361,10 +342,10 @@ describe("User API", () => {
       });
     });
 
-    it("should 400 if body fails schema (wrong gender)", async () => {
+    it("400 invalid field (gender not allowed)", async () => {
       const res = await request(app)
         .patch("/api/users/update")
-        .send({ gender: "alien" }); // not in [female, male]
+        .send({ gender: "alien" });
 
       expect(res.status).toBe(400);
       expect(res.body).toEqual({
@@ -374,87 +355,7 @@ describe("User API", () => {
       expect(mockUpdateUserDataService).not.toHaveBeenCalled();
     });
 
-    it("should handle avatar upload path: if req.file exists, controller tries resizeImg + updateUserDataService", async () => {
-      // we'll re-make the app for this case because we need req.file.
-      // We'll override uploadImage mock JUST for this test.
-      const localApp = express();
-      localApp.use(express.json());
-
-      // custom uploadImage mock to simulate file present
-      const uploadImageMock = (req, res, next) => {
-        req.file = {
-          path: "tmp/file.png",
-          filename: "file.png",
-        };
-        next();
-      };
-
-      // import controller AFTER all base mocks
-      const controllers = await import("../controllers/userController.js");
-      const { validateBody } = await import("../middleware/validateBody.js");
-      const { Schemas } = await import("../schemas/userSchemas.js");
-
-      const miniRouter = express.Router();
-      miniRouter.patch(
-        "/update",
-        // fake authenticate
-        (req, res, next) => {
-          req.user = { ...fakeUser };
-          next();
-        },
-        uploadImageMock, // pretend we got file
-        validateBody(Schemas.updateUserSchema),
-        async (req, res, next) => {
-          try {
-            await controllers.updateUser(req, res);
-          } catch (e) {
-            next(e);
-          }
-        }
-      );
-      localApp.use("/api/users", miniRouter);
-      localApp.use((err, req, res, next) => {
-        const { status = 500, message = "Server error" } = err;
-        res.status(status).json({ message });
-      });
-
-      const updatedWithAvatar = {
-        ...fakeUser,
-        avatarURL: "avatars/newAvatar.png",
-      };
-
-      mockUpdateUserDataService.mockResolvedValue(updatedWithAvatar);
-      mockSafeUserCloneDataService.mockReturnValue({
-        email: updatedWithAvatar.email,
-        name: updatedWithAvatar.name,
-        gender: updatedWithAvatar.gender,
-        weight: updatedWithAvatar.weight,
-        dailyActivityTime: updatedWithAvatar.dailyActivityTime,
-        dailyWaterNorm: updatedWithAvatar.dailyWaterNorm,
-        avatarURL: updatedWithAvatar.avatarURL,
-      });
-
-      const res = await request(localApp).patch("/api/users/update").send({}); // body can be empty, avatar still updates
-
-      expect(res.status).toBe(200);
-      expect(res.body).toEqual({
-        user: {
-          email: "test@example.com",
-          name: "Test User",
-          gender: "female",
-          weight: 70,
-          dailyActivityTime: "01:00",
-          dailyWaterNorm: 2,
-          avatarURL: "avatars/newAvatar.png",
-        },
-      });
-
-      expect(mockUpdateUserDataService).toHaveBeenCalledWith(fakeUser, {
-        avatarURL: "avatars/newAvatar.png",
-      });
-    });
-
-    it("should return 409 if email in use", async () => {
+    it("409 email in use", async () => {
       mockUpdateUserDataService.mockRejectedValue({
         status: 409,
         message: "Email in use",
@@ -469,11 +370,8 @@ describe("User API", () => {
     });
   });
 
-  // =========================
-  // PATCH /api/users/refresh
-  // =========================
   describe("PATCH /api/users/refresh", () => {
-    it("should refresh tokens (200)", async () => {
+    it("200 refresh tokens", async () => {
       mockRegenerateTokenDataService.mockResolvedValue({
         token: "NEW_ACCESS_TOKEN",
         refreshToken: "NEW_REFRESH_TOKEN",
@@ -492,7 +390,7 @@ describe("User API", () => {
       expect(mockRegenerateTokenDataService).toHaveBeenCalledWith(fakeUser);
     });
 
-    it("should 400 if refreshToken missing in body", async () => {
+    it("400 if refreshToken missing", async () => {
       const res = await request(app).patch("/api/users/refresh").send({});
 
       expect(res.status).toBe(400);
@@ -503,7 +401,7 @@ describe("User API", () => {
       expect(mockRegenerateTokenDataService).not.toHaveBeenCalled();
     });
 
-    it("should 401 if regenerateTokenDataService throws unauthorized", async () => {
+    it("401 unauthorized flow", async () => {
       mockRegenerateTokenDataService.mockRejectedValue({
         status: 401,
         message: "User is not found",

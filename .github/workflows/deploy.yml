@@ -1,0 +1,52 @@
+name: CI/CD - Test and Deploy FitSyncBack
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout repo
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Set up Node.js
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      # Install dependencies
+      - name: Install deps
+        run: npm install
+
+      # Run tests
+      - name: Run tests
+        run: npm run test
+
+      # Deploy to VPS over SSH
+      - name: Deploy to VPS
+        if: success()
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            cd /home/ubuntu/FitSyncBack/
+
+            echo "Pull latest code..."
+            git pull origin main
+
+            echo "Install deps..."
+            npm run build
+
+            echo "restart service..."
+
+            pm2 restart fitsync || pm2 start app.js --name fitsync

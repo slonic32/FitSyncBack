@@ -12,6 +12,9 @@ import HttpError from "./helpers/HttpError.js";
 import { globalErrorHandler } from "./helpers/globalErrorHandler.js";
 
 import waterRouter from "./routes/waterRouter.js";
+
+import chatRouter from "./routes/chatRouter.js";
+
 // read environment variables
 dotenv.config();
 
@@ -49,6 +52,9 @@ app.use(`${pathPrefix}/users`, userRouter);
 
 // path for water tracking
 app.use(`${pathPrefix}/water`, waterRouter);
+
+// path for AI chat
+app.use(`${pathPrefix}/chat`, chatRouter);
 
 // not found response
 app.use((_, res, next) => {

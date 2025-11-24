@@ -27,9 +27,16 @@ const updateUserSchema = Joi.object({
   avatarURL: Joi.string(),
 });
 
+const verificationSchema = Joi.object({
+  email: Joi.string().email().required().messages({
+    "any.required": "missing required field email",
+  }),
+});
+
 export const Schemas = {
   registerSchema,
   loginSchema,
   updateUserSchema,
   refreshSchema,
+  verificationSchema,
 };

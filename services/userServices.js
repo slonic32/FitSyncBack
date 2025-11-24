@@ -1,5 +1,7 @@
 import bcrypt from "bcrypt";
 
+import { v4 } from "uuid";
+
 import { User } from "../models/userModel.js";
 import HttpError from "../helpers/HttpError.js";
 import { generateTokens } from "./jwtServices.js";
@@ -16,8 +18,9 @@ export const registerDataService = async (email, name, password) => {
     email,
     name,
     password: hashedPassword,
+    verificationToken: v4(),
   });
-  return await generateTokens(newUser);
+  return newUser;
 };
 
 export const loginDataService = async (email, password) => {
@@ -63,6 +66,14 @@ export const regenerateTokenDataService = async currentUser => {
 };
 
 export const safeUserCloneDataService = user => {
-  const { _id, token, refreshToken, password, ...cloneUser } = user.toObject();
+  const {
+    _id,
+    token,
+    refreshToken,
+    password,
+    verificationToken,
+    verify,
+    ...cloneUser
+  } = user.toObject();
   return cloneUser;
 };

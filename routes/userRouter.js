@@ -47,7 +47,10 @@ userRouter
     authenticateRefresh,
     validateBody(Schemas.refreshSchema),
     errorHandling(controllers.refreshTokens)
-  );
+  )
+
+  .get("/verify/:verificationToken", verifyUser)
+  .post("/verify", resentVerification);
 
 export default userRouter;
 

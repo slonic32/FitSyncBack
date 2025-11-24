@@ -6,17 +6,28 @@ import {
   registerDataService,
   safeUserCloneDataService,
   updateUserDataService,
+  completeUserVerification,
+  getUserByVerificationToken,
+  getUserByEmail,
+  createPasswordRecoveryToken,
+  resetPasswordWithToken,
 } from "../services/userServices.js";
+import {
+  sendVerificationEmail,
+  sendPasswordRecoveryEmail,
+} from "../helpers/mail.js";
 
 export const register = async (req, res) => {
   const { email, name, password } = req.body;
   const newUser = await registerDataService(email.trim(), name, password);
 
-  newUser.toObject();
+  const baseUrl = process.env.BASE_URL || "http://localhost:5173";
+  const verificationUrl = `${baseUrl}/verify/${newUser.verificationToken}`;
+
+  await sendVerificationEmail(newUser.email, verificationUrl);
+
   res.status(201).json({
     user: safeUserCloneDataService(newUser),
-    token: newUser.token,
-    refreshToken: newUser.refreshToken,
   });
 };
 
@@ -84,3 +95,55 @@ export const refreshTokens = async (req, res) => {
   const { token, refreshToken } = await regenerateTokenDataService(req.user);
   res.status(200).json({ token, refreshToken });
 };
+
+export async function verifyUser(req, res, next) {
+  const user = await getUserByVerificationToken(req.params.verificationToken);
+  if (user) {
+    await completeUserVerification(user);
+    res.status(200).json({
+      message: "Verification successful",
+    });
+  } else {
+    res.status(404).json({
+      message: "User not found",
+    });
+  }
+}
+
+export async function resentVerification(req, res, next) {
+  const { email } = req.body;
+  const user = await getUserByEmail(email);
+  if (user) {
+    if (user.verify) {
+      res.status(400).json({
+        message: "Verification has already been passed",
+      });
+    } else {
+      const baseUrl = process.env.BASE_URL || "http://localhost:5173";
+      const verificationUrl = `${baseUrl}/verify/${user.verificationToken}`;
+      await sendVerificationEmail(user.email, verificationUrl);
+      res.status(200).json({
+        message: "Verification email sent",
+      });
+    }
+  } else {
+    res.status(404).json({ message: "User not found" });
+  }
+}
+
+export async function requestPasswordRecovery(req, res, next) {
+  const { email } = req.body;
+  const token = await createPasswordRecoveryToken(email);
+  const baseUrl = process.env.BASE_URL || "http://localhost:5173";
+  const recoveryUrl = `${baseUrl}/reset/${token}`;
+
+  await sendPasswordRecoveryEmail(email, recoveryUrl);
+  res.status(200).json({ message: "Password recovery email sent" });
+}
+
+export async function resetPassword(req, res, next) {
+  const { password } = req.body;
+  const token = req.params.resetToken;
+  await resetPasswordWithToken(token, password);
+  res.status(200).json({ message: "Password has been reset" });
+}

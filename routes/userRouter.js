@@ -49,8 +49,25 @@ userRouter
     errorHandling(controllers.refreshTokens)
   )
 
-  .get("/verify/:verificationToken", verifyUser)
-  .post("/verify", resentVerification);
+  // email verification
+  .get("/verify/:verificationToken", errorHandling(controllers.verifyUser))
+  .post(
+    "/verify",
+    validateBody(Schemas.verificationSchema),
+    errorHandling(controllers.resentVerification)
+  )
+
+  // password recovery
+  .post(
+    "/forgot",
+    validateBody(Schemas.passwordRecoverySchema),
+    errorHandling(controllers.requestPasswordRecovery)
+  )
+  .post(
+    "/reset/:resetToken",
+    validateBody(Schemas.passwordResetSchema),
+    errorHandling(controllers.resetPassword)
+  );
 
 export default userRouter;
 
@@ -145,6 +162,32 @@ export default userRouter;
  *         refreshToken:
  *           type: string
  *           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *
+ *     VerificationRequest:
+ *       type: object
+ *       required: [email]
+ *       properties:
+ *         email:
+ *           type: string
+ *           format: email
+ *           example: jessica.smith@test.com
+ *
+ *     PasswordRecoveryRequest:
+ *       type: object
+ *       required: [email]
+ *       properties:
+ *         email:
+ *           type: string
+ *           format: email
+ *           example: jessica.smith@test.com
+ *
+ *     PasswordResetRequest:
+ *       type: object
+ *       required: [password]
+ *       properties:
+ *         password:
+ *           type: string
+ *           example: "NewP@ssw0rd"
  *
  *     AuthResponse:
  *       type: object
@@ -297,4 +340,98 @@ export default userRouter;
  *               $ref: '#/components/schemas/Tokens'
  *       '401':
  *         description: Unauthorized
+ *
+ * /api/users/verify/{verificationToken}:
+ *   get:
+ *     summary: Verify user email
+ *     description: Completes email verification using the token sent via email.
+ *     tags: ["User API"]
+ *     parameters:
+ *       - in: path
+ *         name: verificationToken
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Verification token received in email link.
+ *     responses:
+ *       '200':
+ *         description: Verification successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Verification successful
+ *       '404':
+ *         description: User not found
+ *
+ * /api/users/verify:
+ *   post:
+ *     summary: Resend verification email
+ *     description: Sends a new verification email to an unverified user.
+ *     tags: ["User API"]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/VerificationRequest'
+ *     responses:
+ *       '200':
+ *         description: Verification email sent
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Verification email sent
+ *       '400':
+ *         description: Verification has already been passed
+ *       '404':
+ *         description: User not found
+ *
+ * /api/users/password/forgot:
+ *   post:
+ *     summary: Request password recovery
+ *     description: Sends a password recovery email with a reset link.
+ *     tags: ["User API"]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/PasswordRecoveryRequest'
+ *     responses:
+ *       '200':
+ *         description: Password recovery email sent
+ *       '404':
+ *         description: User not found
+ *
+ * /api/users/password/reset/{resetToken}:
+ *   post:
+ *     summary: Reset password
+ *     description: Resets the password using a valid recovery token.
+ *     tags: ["User API"]
+ *     parameters:
+ *       - in: path
+ *         name: resetToken
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Password reset token received in email link.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/PasswordResetRequest'
+ *     responses:
+ *       '200':
+ *         description: Password has been reset
+ *       '400':
+ *         description: Invalid or expired token
  */

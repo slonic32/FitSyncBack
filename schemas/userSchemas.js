@@ -17,6 +17,14 @@ const refreshSchema = Joi.object({
   refreshToken: Joi.string().required(),
 });
 
+const passwordRecoverySchema = Joi.object({
+  email: Joi.string().trim().email().required(),
+});
+
+const passwordResetSchema = Joi.object({
+  password: Joi.string().min(4).max(22).required(),
+});
+
 const updateUserSchema = Joi.object({
   name: Joi.string(),
   email: Joi.string().trim().email(),
@@ -39,4 +47,6 @@ export const Schemas = {
   updateUserSchema,
   refreshSchema,
   verificationSchema,
+  passwordRecoverySchema,
+  passwordResetSchema,
 };

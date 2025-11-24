@@ -51,6 +51,14 @@ const userSchema = new Schema(
       default: false,
     },
     verificationToken: String,
+    passwordResetToken: {
+      type: String,
+      default: null,
+    },
+    passwordResetExpires: {
+      type: Date,
+      default: null,
+    },
   },
   {
     versionKey: false,

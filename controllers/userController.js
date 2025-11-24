@@ -8,19 +8,23 @@ import {
   updateUserDataService,
   completeUserVerification,
   getUserByVerificationToken,
+  getUserByEmail,
+  createPasswordRecoveryToken,
+  resetPasswordWithToken,
 } from "../services/userServices.js";
-import { sendVerificationEmail } from "../helpers/mail.js";
+import {
+  sendVerificationEmail,
+  sendPasswordRecoveryEmail,
+} from "../helpers/mail.js";
 
 export const register = async (req, res) => {
   const { email, name, password } = req.body;
   const newUser = await registerDataService(email.trim(), name, password);
 
-  newUser.toObject();
+  const baseUrl = process.env.BASE_URL || "http://localhost:5173";
+  const verificationUrl = `${baseUrl}/verify/${newUser.verificationToken}`;
 
-  await sendVerificationEmail(
-    newUser.email,
-    `http://localhost:3000/api/users/verify/${newUser.verificationToken}`
-  );
+  await sendVerificationEmail(newUser.email, verificationUrl);
 
   res.status(201).json({
     user: safeUserCloneDataService(newUser),
@@ -107,7 +111,6 @@ export async function verifyUser(req, res, next) {
 }
 
 export async function resentVerification(req, res, next) {
-  validate(verificationSchema, req.body);
   const { email } = req.body;
   const user = await getUserByEmail(email);
   if (user) {
@@ -116,17 +119,31 @@ export async function resentVerification(req, res, next) {
         message: "Verification has already been passed",
       });
     } else {
-      await sendVerificationEmail(
-        user.email,
-        `http://localhost:3000/api/users/verify/${user.verificationToken}`
-      );
+      const baseUrl = process.env.BASE_URL || "http://localhost:5173";
+      const verificationUrl = `${baseUrl}/verify/${user.verificationToken}`;
+      await sendVerificationEmail(user.email, verificationUrl);
       res.status(200).json({
         message: "Verification email sent",
       });
     }
   } else {
-    res.status(400).json({
-      message: "missing required field email",
-    });
+    res.status(404).json({ message: "User not found" });
   }
+}
+
+export async function requestPasswordRecovery(req, res, next) {
+  const { email } = req.body;
+  const token = await createPasswordRecoveryToken(email);
+  const baseUrl = process.env.BASE_URL || "http://localhost:5173";
+  const recoveryUrl = `${baseUrl}/reset/${token}`;
+
+  await sendPasswordRecoveryEmail(email, recoveryUrl);
+  res.status(200).json({ message: "Password recovery email sent" });
+}
+
+export async function resetPassword(req, res, next) {
+  const { password } = req.body;
+  const token = req.params.resetToken;
+  await resetPasswordWithToken(token, password);
+  res.status(200).json({ message: "Password has been reset" });
 }

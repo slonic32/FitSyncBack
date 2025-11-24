@@ -24,6 +24,13 @@ const mockLogoutUserDataService = jest.fn();
 const mockRegenerateTokenDataService = jest.fn();
 const mockSafeUserCloneDataService = jest.fn();
 const mockUpdateUserDataService = jest.fn();
+const mockCompleteUserVerification = jest.fn();
+const mockCreatePasswordRecoveryToken = jest.fn();
+const mockResetPasswordWithToken = jest.fn();
+const mockGetUserByEmail = jest.fn();
+const mockGetUserByVerificationToken = jest.fn();
+const mockSendVerificationEmail = jest.fn();
+const mockSendPasswordRecoveryEmail = jest.fn();
 
 jest.unstable_mockModule("../middleware/authenticate.js", () => ({
   authenticate: (req, res, next) => {
@@ -70,10 +77,23 @@ jest.unstable_mockModule("../services/userServices.js", () => ({
     mockRegenerateTokenDataService(...args),
   updateUserDataService: (...args) => mockUpdateUserDataService(...args),
   safeUserCloneDataService: (...args) => mockSafeUserCloneDataService(...args),
+  completeUserVerification: (...args) => mockCompleteUserVerification(...args),
+  createPasswordRecoveryToken: (...args) =>
+    mockCreatePasswordRecoveryToken(...args),
+  resetPasswordWithToken: (...args) => mockResetPasswordWithToken(...args),
+  getUserByEmail: (...args) => mockGetUserByEmail(...args),
+  getUserByVerificationToken: (...args) =>
+    mockGetUserByVerificationToken(...args),
 }));
 
 jest.unstable_mockModule("../services/imgServices.js", () => ({
   resizeImg: jest.fn(async () => "avatars/newAvatar.png"),
+}));
+
+jest.unstable_mockModule("../helpers/mail.js", () => ({
+  sendVerificationEmail: (...args) => mockSendVerificationEmail(...args),
+  sendPasswordRecoveryEmail: (...args) =>
+    mockSendPasswordRecoveryEmail(...args),
 }));
 
 // import the real router
@@ -140,8 +160,6 @@ describe("User API", () => {
           dailyWaterNorm: 2,
           avatarURL: "avatars/u123.png",
         },
-        token: "NEW_ACCESS",
-        refreshToken: "NEW_REFRESH",
       });
 
       expect(mockRegisterDataService).toHaveBeenCalledWith(
